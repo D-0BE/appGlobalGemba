@@ -2,7 +2,9 @@ import "./Dashboard.css"
 
 function Dashboard(){
     return (
-        <h1>¡Bienvenido!, DOBE</h1>
+        <div>
+            <h1>Esto es el body del Dashboard</h1>
+        </div>
     )
 }
 
