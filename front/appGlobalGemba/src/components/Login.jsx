@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import './Login.css';
 
 function Login() {
     const navigate = useNavigate();
@@ -11,19 +12,21 @@ function Login() {
     };
 
     return (
-        <div style={{ textAlign: 'center', marginTop: '100px' }}>
-            <h2>Login</h2>
-            <form onSubmit={handleLogin} style={{ display: 'inline-block', textAlign: 'left' }}>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Usuario: </label><br />
-                    <input type="text" placeholder="Usuario" required />
-                </div>
-                <div style={{ marginBottom: '10px' }}>
-                    <label>Contraseña: </label><br />
-                    <input type="password" placeholder="Contraseña" required />
-                </div>
-                <button type="submit">Ingresar</button>
-            </form>
+        <div className="login-container">
+            <div className="login-card">
+                <h2 className="login-title">Iniciar Sesión</h2>
+                <form onSubmit={handleLogin} className="login-form">
+                    <div className="input-group">
+                        <label className="input-label">Usuario:</label>
+                        <input type="text" placeholder="Usuario" required className="input-field" />
+                    </div>
+                    <div className="input-group">
+                        <label className="input-label">Contraseña:</label>
+                        <input type="password" placeholder="Contraseña" required className="input-field" />
+                    </div>
+                    <button type="submit" className="login-button">Ingresar</button>
+                </form>
+            </div>
         </div>
     );
 }
