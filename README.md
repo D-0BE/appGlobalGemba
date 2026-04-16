@@ -221,7 +221,7 @@ PORT=3001
 
 | Área         | Tarea                             | Responsable     | Estado       |
 |--------------|-----------------------------------|-----------------|--------------|
-| **Backend**  | Base de datos (schema + seed)     | David           | ✅ Completo  |
+| **Backend**  | Base de datos (schema + seed)     | Marco           | ✅ Completo  |
 | **Backend**  | API REST (Express + JWT)          | Todos           | ✅ Completo  |
 | **Frontend** | Login                             | Álvaro          | 🔧 En curso  |
 | **Frontend** | Dashboard / Calendario / Fichajes | Rodrigo + David | 🔧 En curso  |
