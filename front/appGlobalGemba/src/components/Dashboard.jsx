@@ -9,6 +9,47 @@ function Dashboard() {
         tarde: { inicio: "", fin: "" }
     });
 
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // Obtener el lunes de la semana actual
+    const getMondayOfCurrentWeek = (date) => {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Ajustar cuando sea domingo
+        const monday = new Date(d.setDate(diff));
+        monday.setHours(0, 0, 0, 0);
+        return monday;
+    };
+
+    // Obtener el viernes de la semana actual
+    const getFridayOfCurrentWeek = (date) => {
+        const monday = getMondayOfCurrentWeek(date);
+        const friday = new Date(monday);
+        friday.setDate(friday.getDate() + 4); // Lunes + 4 = Viernes
+        friday.setHours(23, 59, 59, 999);
+        return friday;
+    };
+
+    // Verificar si la fecha está bloqueada
+    const isDateLocked = (date) => {
+        const checkDate = new Date(date);
+        checkDate.setHours(0, 0, 0, 0);
+
+        // Si es en el pasado (antes de hoy), está bloqueado
+        if (checkDate < today) {
+            return true;
+        }
+
+        // Si es después del viernes de esta semana, está bloqueado
+        const fridayOfCurrentWeek = getFridayOfCurrentWeek(today);
+        if (checkDate > fridayOfCurrentWeek) {
+            return true;
+        }
+
+        return false;
+    };
+
     const handleDateChange = (days) => {
         const newDate = new Date(currentDate);
         newDate.setDate(newDate.getDate() + days);
@@ -43,20 +84,24 @@ function Dashboard() {
             <div className="dashboard-header">
                 <div className="date-display">
                     {formatDate(currentDate)}
+                    {isDateLocked(currentDate) && (
+                        <span className="locked-badge">🔒 BLOQUEADO</span>
+                    )}
                 </div>
                 <div className="absent-checkbox">
                     <label>
                         <input 
                             type="checkbox" 
                             checked={isAbsent} 
-                            onChange={(e) => setIsAbsent(e.target.checked)} 
+                            onChange={(e) => setIsAbsent(e.target.checked)}
+                            disabled={isDateLocked(currentDate)}
                         />
                         Ausente
                     </label>
                 </div>
             </div>
 
-            <table className="schedule-table">
+            <table className={`schedule-table ${isDateLocked(currentDate) ? 'locked' : ''}`}>
                 <thead>
                     <tr>
                         <th>Turno</th>
@@ -72,7 +117,8 @@ function Dashboard() {
                                 type="time" 
                                 value={schedule.manana.inicio} 
                                 onChange={(e) => handleScheduleChange("manana", "inicio", e.target.value)}
-                                disabled={isAbsent}
+                                disabled={isAbsent || isDateLocked(currentDate)}
+                                className={isDateLocked(currentDate) ? 'disabled-input' : ''}
                             />
                         </td>
                         <td>
@@ -80,7 +126,8 @@ function Dashboard() {
                                 type="time" 
                                 value={schedule.manana.fin} 
                                 onChange={(e) => handleScheduleChange("manana", "fin", e.target.value)}
-                                disabled={isAbsent}
+                                disabled={isAbsent || isDateLocked(currentDate)}
+                                className={isDateLocked(currentDate) ? 'disabled-input' : ''}
                             />
                         </td>
                     </tr>
@@ -91,7 +138,8 @@ function Dashboard() {
                                 type="time" 
                                 value={schedule.tarde.inicio} 
                                 onChange={(e) => handleScheduleChange("tarde", "inicio", e.target.value)}
-                                disabled={isAbsent}
+                                disabled={isAbsent || isDateLocked(currentDate)}
+                                className={isDateLocked(currentDate) ? 'disabled-input' : ''}
                             />
                         </td>
                         <td>
@@ -99,7 +147,8 @@ function Dashboard() {
                                 type="time" 
                                 value={schedule.tarde.fin} 
                                 onChange={(e) => handleScheduleChange("tarde", "fin", e.target.value)}
-                                disabled={isAbsent}
+                                disabled={isAbsent || isDateLocked(currentDate)}
+                                className={isDateLocked(currentDate) ? 'disabled-input' : ''}
                             />
                         </td>
                     </tr>
@@ -111,7 +160,13 @@ function Dashboard() {
                     <button onClick={() => handleDateChange(-1)}>&#8592;</button>
                     <button onClick={() => handleDateChange(1)}>&#8594;</button>
                 </div>
-                <button className="submit-btn" onClick={handleSubmit}>Enviar</button>
+                <button 
+                    className="submit-btn" 
+                    onClick={handleSubmit}
+                    disabled={isDateLocked(currentDate)}
+                >
+                    Enviar
+                </button>
             </div>
         </div>
     );
