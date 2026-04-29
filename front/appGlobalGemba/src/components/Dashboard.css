@@ -135,3 +135,128 @@
 .disabled-input {
     background-color: #f0f0f0 !important;
 }
+
+.calendar-container {
+    margin-bottom: 20px;
+}
+
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.calendar-weekday {
+    font-weight: bold;
+    text-align: center;
+    padding: 8px 0;
+    background-color: #f2f2f2;
+    border-radius: 6px;
+}
+
+.calendar-day {
+    min-height: 50px;
+    border: 1px solid #d3d3d3;
+    border-radius: 8px;
+    background-color: #fff;
+    color: #333;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.calendar-day:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.calendar-day.empty {
+    background-color: transparent;
+    border-color: transparent;
+    cursor: default;
+}
+
+.calendar-day.today {
+    background-color: #2f6bff;
+    color: white;
+}
+
+.calendar-day.selected {
+    border-color: #0d6efd;
+    box-shadow: inset 0 0 0 2px rgba(13, 110, 253, 0.18);
+}
+
+.calendar-day.fichado {
+    background-color: #28a745;
+    color: white;
+}
+
+.calendar-day.vacation {
+    background-color: #ff88d0;
+    color: #4f214b;
+}
+
+.calendar-day.holiday {
+    background-color: #ffb74d;
+    color: #4e3100;
+}
+
+.calendar-day.disabled-day {
+    background-color: #f7f7f7;
+    color: #999;
+    border-color: #e0e0e0;
+    cursor: not-allowed;
+}
+
+.calendar-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    font-size: 0.9rem;
+}
+
+.legend-item {
+    padding: 6px 10px;
+    border-radius: 6px;
+    color: #fff;
+    font-weight: 600;
+}
+
+.legend-item.today {
+    background-color: #2f6bff;
+}
+
+.legend-item.fichado {
+    background-color: #28a745;
+}
+
+.legend-item.vacation {
+    background-color: #ff88d0;
+    color: #4f214b;
+}
+
+.legend-item.holiday {
+    background-color: #ffb74d;
+    color: #4e3100;
+}
+
+.legend-item.disabled {
+    background-color: #d3d3d3;
+    color: #333;
+}
+
+.date-summary {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.date-summary-label {
+    font-size: 0.95rem;
+    color: #666;
+}
