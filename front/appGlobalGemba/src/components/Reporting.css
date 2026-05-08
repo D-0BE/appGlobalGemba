@@ -1,0 +1,30 @@
+.reporting-container {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 2rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.reporting-info p {
+  font-size: 1.1rem;
+  margin: 0.5rem 0;
+}
+
+.reporting-summary {
+  margin-top: 2rem;
+  background: #f5f7fa;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.reporting-summary ul {
+  list-style: none;
+  padding: 0;
+}
+
+.reporting-summary li {
+  margin: 0.5rem 0;
+  font-size: 1rem;
+}
