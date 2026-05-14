@@ -17,6 +17,14 @@ function Navbar({ linksProp }) {
                     <li>
                         <Link className="link" to="/perfil">{linksProp.perfil}</Link>
                     </li>
+                    <li>
+                        <Link className="link" to="/reporting">{linksProp.reporting}</Link>
+                    </li>
+                    {linksProp.empleados && (
+                        <li>
+                            <Link className="link" to="/empleados">{linksProp.empleados}</Link>
+                        </li>
+                    )}
                 </ul>
             </nav>
         </header>
