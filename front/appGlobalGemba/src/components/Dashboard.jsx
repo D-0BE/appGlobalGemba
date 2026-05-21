@@ -1,4 +1,5 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { getFichajes, getFichajeActivo, registrarEntrada, registrarSalida } from "../api";
 import "./Dashboard.css";
 
 function Dashboard() {
@@ -12,8 +13,22 @@ function Dashboard() {
     const [isAbsent, setIsAbsent] = useState(false);
     const [schedule, setSchedule] = useState({
         manana: { inicio: "", fin: "" },
-        tarde: { inicio: "", fin: "" }
+        tarde: { inicio: "", fin: "" },
     });
+
+    // Estado de fichajes desde la BD
+    const [fichajeActivo, setFichajeActivo] = useState(null); // { id, entrada, tipo, ... }
+    const [fichajesDelMes, setFichajesDelMes] = useState([]); // array de fichajes
+    const [loadingFichaje, setLoadingFichaje] = useState(false);
+    const [fichajeError, setFichajeError] = useState('');
+    const [fichajeSuccess, setFichajeSuccess] = useState('');
+
+    // ── Helpers de fecha ──────────────────────────────
+    const getDateKey = (date) => {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return d.toISOString().slice(0, 10);
+    };
 
     const getMondayOfWeek = (date) => {
         const d = new Date(date);
@@ -24,16 +39,12 @@ function Dashboard() {
         return monday;
     };
 
-    const getDateKey = (date) => {
-        const d = new Date(date);
-        d.setHours(0, 0, 0, 0);
-        return d.toISOString().slice(0, 10);
-    };
-
     const isSameDay = (a, b) => {
         const da = new Date(a);
         const db = new Date(b);
-        return da.getFullYear() === db.getFullYear() && da.getMonth() === db.getMonth() && da.getDate() === db.getDate();
+        return da.getFullYear() === db.getFullYear() &&
+               da.getMonth() === db.getMonth() &&
+               da.getDate() === db.getDate();
     };
 
     const isSameWeek = (a, b) => {
@@ -46,25 +57,41 @@ function Dashboard() {
         return checkDate <= today && isSameWeek(checkDate, today);
     };
 
-    const holidays = useMemo(() => new Set([
-        getDateKey(new Date(today.getFullYear(), today.getMonth(), 1)),
-        getDateKey(new Date(today.getFullYear(), today.getMonth(), 6)),
-        getDateKey(new Date(today.getFullYear(), today.getMonth(), 25))
-    ]), [today]);
+    // ── Cargar fichajes del mes y fichaje activo ──────
+    const getMesKey = useCallback((date) => {
+        const d = new Date(date);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        return `${d.getFullYear()}-${mm}`;
+    }, []);
 
-    const vacations = useMemo(() => new Set([
-        getDateKey(new Date(today.getFullYear(), today.getMonth(), 15)),
-        getDateKey(new Date(today.getFullYear(), today.getMonth(), 16))
-    ]), [today]);
+    const cargarFichajes = useCallback(async () => {
+        try {
+            const mes = getMesKey(currentDate);
+            const [activo, todos] = await Promise.all([
+                getFichajeActivo(),
+                getFichajes(mes),
+            ]);
+            setFichajeActivo(activo);
+            setFichajesDelMes(todos || []);
+        } catch {
+            // Si falla la carga, no bloqueamos la UI
+        }
+    }, [currentDate, getMesKey]);
 
-    const fichados = useMemo(() => {
-        const monday = getMondayOfWeek(today);
-        return new Set([
-            getDateKey(new Date(monday)),
-            getDateKey(new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 1))
-        ]);
-    }, [today]);
+    useEffect(() => {
+        cargarFichajes();
+    }, [cargarFichajes]);
 
+    // ── Días con fichaje cerrado (para el calendario) ─
+    const fichadosKeys = useMemo(() => {
+        return new Set(
+            fichajesDelMes
+                .filter((f) => f.estado === 'cerrado')
+                .map((f) => getDateKey(new Date(f.entrada)))
+        );
+    }, [fichajesDelMes]);
+
+    // ── Calendario ────────────────────────────────────
     const getMonthCalendar = (date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -95,56 +122,67 @@ function Dashboard() {
 
     const getCellStatus = (date) => {
         const key = getDateKey(date);
-        if (holidays.has(key)) return "holiday";
-        if (vacations.has(key)) return "vacation";
-        if (fichados.has(key)) return "fichado";
+        if (fichadosKeys.has(key)) return "fichado";
         return "";
     };
 
     const handleDateClick = (date) => {
-        if (!date || !isEditableDate(date)) {
-            return;
-        }
+        if (!date || !isEditableDate(date)) return;
 
         setCurrentDate(new Date(date));
         setIsAbsent(false);
-        setSchedule({
-            manana: { inicio: "", fin: "" },
-            tarde: { inicio: "", fin: "" }
-        });
+        setSchedule({ manana: { inicio: "", fin: "" }, tarde: { inicio: "", fin: "" } });
+        setFichajeError('');
+        setFichajeSuccess('');
     };
 
-    const formatDate = (date) => {
-        return date.toLocaleDateString("es-ES", {
+    const formatDate = (date) =>
+        date.toLocaleDateString("es-ES", {
             weekday: "long",
             year: "numeric",
             month: "long",
-            day: "numeric"
+            day: "numeric",
         });
-    };
 
-    const formatMonthYear = (date) => {
-        return date.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
-    };
+    const formatMonthYear = (date) =>
+        date.toLocaleDateString("es-ES", { month: "long", year: "numeric" });
 
     const selectedDateLocked = !isEditableDate(currentDate);
 
     const handleScheduleChange = (period, field, value) => {
         setSchedule((prev) => ({
             ...prev,
-            [period]: {
-                ...prev[period],
-                [field]: value
-            }
+            [period]: { ...prev[period], [field]: value },
         }));
     };
 
-    const handleSubmit = () => {
-        console.log("Horario enviado correctamente", {
-            fecha: getDateKey(currentDate),
-            schedule,
-            ausente: isAbsent
-        });
+    // ── Registrar entrada o salida ────────────────────
+    const handleSubmit = async () => {
+        setFichajeError('');
+        setFichajeSuccess('');
+        setLoadingFichaje(true);
+
+        try {
+            if (!fichajeActivo) {
+                // Registrar entrada
+                const tipo = isAbsent ? 'normal' : 'normal'; // puede extenderse
+                const nuevo = await registrarEntrada(tipo);
+                setFichajeActivo(nuevo);
+                setFichajeSuccess('✅ Entrada registrada correctamente.');
+            } else {
+                // Registrar salida — calcular pausa si hay datos de horario
+                const pausaMinutos = 0; // podría calcularse desde schedule
+                await registrarSalida(fichajeActivo.id, pausaMinutos);
+                setFichajeActivo(null);
+                setFichajeSuccess('✅ Salida registrada correctamente.');
+                // Recargar fichajes del mes
+                await cargarFichajes();
+            }
+        } catch (err) {
+            setFichajeError(err.message || 'Error al registrar fichaje.');
+        } finally {
+            setLoadingFichaje(false);
+        }
     };
 
     return (
@@ -158,9 +196,9 @@ function Dashboard() {
                 </div>
                 <div className="absent-checkbox">
                     <label>
-                        <input 
-                            type="checkbox" 
-                            checked={isAbsent} 
+                        <input
+                            type="checkbox"
+                            checked={isAbsent}
                             onChange={(e) => setIsAbsent(e.target.checked)}
                             disabled={selectedDateLocked}
                         />
@@ -168,6 +206,14 @@ function Dashboard() {
                     </label>
                 </div>
             </div>
+
+            {/* Estado del fichaje activo */}
+            {fichajeActivo && (
+                <div style={{ background: '#e8f5e9', padding: '10px 16px', borderRadius: '8px', marginBottom: '12px', color: '#2e7d32' }}>
+                    🟢 Fichaje abierto desde{' '}
+                    {new Date(fichajeActivo.entrada).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
+                </div>
+            )}
 
             <div className="calendar-container">
                 <div className="calendar-grid">
@@ -188,7 +234,7 @@ function Dashboard() {
                                 isToday ? "today" : "",
                                 isSelected ? "selected" : "",
                                 !editable && day ? "disabled-day" : "",
-                                !day ? "empty" : ""
+                                !day ? "empty" : "",
                             ]
                                 .filter(Boolean)
                                 .join(" ");
@@ -211,8 +257,6 @@ function Dashboard() {
                 <div className="calendar-legend">
                     <span className="legend-item today">Hoy</span>
                     <span className="legend-item fichado">Fichado</span>
-                    <span className="legend-item vacation">Vacaciones</span>
-                    <span className="legend-item holiday">Festivo</span>
                     <span className="legend-item disabled">No fichable</span>
                 </div>
             </div>
@@ -235,18 +279,18 @@ function Dashboard() {
                     <tr>
                         <td>Mañana</td>
                         <td>
-                            <input 
-                                type="time" 
-                                value={schedule.manana.inicio} 
+                            <input
+                                type="time"
+                                value={schedule.manana.inicio}
                                 onChange={(e) => handleScheduleChange("manana", "inicio", e.target.value)}
                                 disabled={isAbsent || selectedDateLocked}
                                 className={selectedDateLocked ? 'disabled-input' : ''}
                             />
                         </td>
                         <td>
-                            <input 
-                                type="time" 
-                                value={schedule.manana.fin} 
+                            <input
+                                type="time"
+                                value={schedule.manana.fin}
                                 onChange={(e) => handleScheduleChange("manana", "fin", e.target.value)}
                                 disabled={isAbsent || selectedDateLocked}
                                 className={selectedDateLocked ? 'disabled-input' : ''}
@@ -256,18 +300,18 @@ function Dashboard() {
                     <tr>
                         <td>Tarde</td>
                         <td>
-                            <input 
-                                type="time" 
-                                value={schedule.tarde.inicio} 
+                            <input
+                                type="time"
+                                value={schedule.tarde.inicio}
                                 onChange={(e) => handleScheduleChange("tarde", "inicio", e.target.value)}
                                 disabled={isAbsent || selectedDateLocked}
                                 className={selectedDateLocked ? 'disabled-input' : ''}
                             />
                         </td>
                         <td>
-                            <input 
-                                type="time" 
-                                value={schedule.tarde.fin} 
+                            <input
+                                type="time"
+                                value={schedule.tarde.fin}
                                 onChange={(e) => handleScheduleChange("tarde", "fin", e.target.value)}
                                 disabled={isAbsent || selectedDateLocked}
                                 className={selectedDateLocked ? 'disabled-input' : ''}
@@ -277,13 +321,24 @@ function Dashboard() {
                 </tbody>
             </table>
 
+            {fichajeError && (
+                <p style={{ color: 'red', margin: '8px 0' }}>{fichajeError}</p>
+            )}
+            {fichajeSuccess && (
+                <p style={{ color: 'green', margin: '8px 0' }}>{fichajeSuccess}</p>
+            )}
+
             <div className="dashboard-footer">
-                <button 
-                    className="submit-btn" 
+                <button
+                    className="submit-btn"
                     onClick={handleSubmit}
-                    disabled={selectedDateLocked}
+                    disabled={selectedDateLocked || loadingFichaje}
                 >
-                    Enviar
+                    {loadingFichaje
+                        ? 'Procesando...'
+                        : fichajeActivo
+                        ? 'Registrar Salida'
+                        : 'Registrar Entrada'}
                 </button>
             </div>
         </div>

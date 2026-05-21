@@ -1,39 +1,56 @@
 import { useEffect, useState } from "react";
+import { getMe, updateUsuario } from "../api";
 import "./Perfiles.css";
 
 function Perfiles() {
     const [user, setUser] = useState(null);
     const [editMode, setEditMode] = useState(false);
     const [errors, setErrors] = useState({});
+    const [saving, setSaving] = useState(false);
+    const [saveError, setSaveError] = useState('');
 
     useEffect(() => {
-        const storedUser = localStorage.getItem("user");
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
-        } else {
-            setUser({
-                nombre: "",
-                apellidos: "",
-                fechaNacimiento: "",
-                fotoUrl: "",
-                email: "",
-                departamento: "",
-                rol: "",
-                turno: "",
-                horario: ""
+        getMe()
+            .then((data) => {
+                setUser({
+                    id:              data.id,
+                    nombre:          data.nombre || '',
+                    apellidos:       data.apellidos || '',
+                    fechaNacimiento: data.fecha_nacimiento ? data.fecha_nacimiento.slice(0, 10) : '',
+                    fotoUrl:         data.foto_url || '',
+                    email:           data.email || '',
+                    departamento:    data.departamento || '',
+                    rol:             data.rol || '',
+                });
+            })
+            .catch(() => {
+                // Fallback: leer del localStorage si la API falla
+                const stored = localStorage.getItem('user');
+                if (stored) {
+                    const u = JSON.parse(stored);
+                    setUser({
+                        id:              u.id || '',
+                        nombre:          u.nombre || '',
+                        apellidos:       u.apellidos || '',
+                        fechaNacimiento: '',
+                        fotoUrl:         u.foto_url || '',
+                        email:           u.email || '',
+                        departamento:    '',
+                        rol:             u.rol || '',
+                    });
+                }
             });
-        }
     }, []);
 
     const handleChange = (e) => {
         setUser((prevUser) => ({
             ...prevUser,
-            [e.target.name]: e.target.value
+            [e.target.name]: e.target.value,
         }));
     };
 
     const validate = () => {
-        let newErrors = {};
+        const newErrors = {};
 
         if (!user.nombre.trim()) {
             newErrors.nombre = "El nombre es obligatorio";
@@ -55,11 +72,48 @@ function Perfiles() {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!validate()) return;
 
-        localStorage.setItem("user", JSON.stringify(user));
-        setEditMode(false);
+        setSaving(true);
+        setSaveError('');
+
+        try {
+            const updated = await updateUsuario(user.id, {
+                nombre:          user.nombre,
+                apellidos:       user.apellidos,
+                fecha_nacimiento: user.fechaNacimiento,
+                foto_url:        user.fotoUrl,
+            });
+
+            // Sincronizar datos actualizados
+            setUser((prev) => ({
+                ...prev,
+                nombre:          updated.nombre,
+                apellidos:       updated.apellidos,
+                fechaNacimiento: updated.fecha_nacimiento ? updated.fecha_nacimiento.slice(0, 10) : prev.fechaNacimiento,
+                fotoUrl:         updated.foto_url || prev.fotoUrl,
+                email:           updated.email || prev.email,
+            }));
+
+            // Actualizar también el localStorage
+            const stored = localStorage.getItem('user');
+            if (stored) {
+                const u = JSON.parse(stored);
+                localStorage.setItem('user', JSON.stringify({
+                    ...u,
+                    nombre:    updated.nombre,
+                    apellidos: updated.apellidos,
+                    foto_url:  updated.foto_url,
+                }));
+            }
+
+            setEditMode(false);
+        } catch (err) {
+            setSaveError(err.message || 'Error al guardar los cambios.');
+        } finally {
+            setSaving(false);
+        }
     };
 
     if (!user) return <p>Cargando perfil...</p>;
@@ -111,9 +165,8 @@ function Perfiles() {
                                 name="email"
                                 type="email"
                                 value={user.email}
-                                onChange={handleChange}
+                                disabled
                             />
-                            {errors.email && <p style={{ color: "red" }}>{errors.email}</p>}
                         </div>
 
                         <div className="input-group">
@@ -151,18 +204,18 @@ function Perfiles() {
                             <input className="input-field" value={user.rol} disabled />
                         </div>
 
-                        <div className="input-group">
-                            <label className="input-label">Turno</label>
-                            <input className="input-field" value={user.turno} disabled />
-                        </div>
+                        {saveError && <p style={{ color: 'red', marginBottom: '10px' }}>{saveError}</p>}
 
-                        <div className="input-group">
-                            <label className="input-label">Horario</label>
-                            <input className="input-field" value={user.horario} disabled />
-                        </div>
-
-                        <button className="login-button" onClick={handleSave}>
-                            Guardar
+                        <button className="login-button" onClick={handleSave} disabled={saving}>
+                            {saving ? 'Guardando...' : 'Guardar'}
+                        </button>
+                        <button
+                            className="login-button"
+                            style={{ marginTop: '8px', background: '#888' }}
+                            onClick={() => { setEditMode(false); setSaveError(''); }}
+                            disabled={saving}
+                        >
+                            Cancelar
                         </button>
                     </>
                 ) : (
@@ -181,7 +234,7 @@ function Perfiles() {
                         <div className="perfil-row">
                             <div className="perfil-card">
                                 <p><strong>Departamento</strong></p>
-                                <p>{user.departamento}</p>
+                                <p>{user.departamento || '—'}</p>
                             </div>
                             <div className="perfil-card">
                                 <p><strong>Rol</strong></p>
@@ -191,18 +244,7 @@ function Perfiles() {
 
                         <div className="perfil-card" style={{ marginBottom: "18px" }}>
                             <p><strong>Fecha de nacimiento</strong></p>
-                            <p>{user.fechaNacimiento}</p>
-                        </div>
-
-                        <div className="perfil-row">
-                            <div className="perfil-card">
-                                <p><strong>Turno</strong></p>
-                                <p>{user.turno}</p>
-                            </div>
-                            <div className="perfil-card">
-                                <p><strong>Horario</strong></p>
-                                <p>{user.horario}</p>
-                            </div>
+                            <p>{user.fechaNacimiento || '—'}</p>
                         </div>
 
                         <div className="perfil-actions">

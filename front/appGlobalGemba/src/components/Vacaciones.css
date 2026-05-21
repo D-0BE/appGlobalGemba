@@ -126,6 +126,19 @@
     border-color: #ff7ab8;
 }
 
+.vacaciones-day.aprobado {
+    background: #d1fae5;
+    color: #065f46;
+    border-color: #6ee7b7;
+    cursor: not-allowed;
+}
+
+.vacaciones-day.pendiente {
+    background: #fef9c3;
+    color: #713f12;
+    border-color: #fde68a;
+}
+
 .vacaciones-day.empty {
     background: transparent;
     border-color: transparent;

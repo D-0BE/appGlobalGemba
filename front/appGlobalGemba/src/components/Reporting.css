@@ -1,30 +1,387 @@
-.reporting-container {
-  max-width: 500px;
-  margin: 40px auto;
-  padding: 2rem;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+/* ══════════════════════════════════════════════
+   Reporting — Estilos completos
+   ══════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+.rep-container {
+    font-family: 'Inter', Arial, sans-serif;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 32px 24px 60px;
+    color: #1e293b;
 }
 
-.reporting-info p {
-  font-size: 1.1rem;
-  margin: 0.5rem 0;
+/* ── Loading ───────────────────────────── */
+
+.rep-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    padding: 80px 0;
+    color: #64748b;
+    font-size: 1rem;
 }
 
-.reporting-summary {
-  margin-top: 2rem;
-  background: #f5f7fa;
-  padding: 1rem;
-  border-radius: 8px;
+.rep-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e2e8f0;
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: rep-spin 0.8s linear infinite;
 }
 
-.reporting-summary ul {
-  list-style: none;
-  padding: 0;
+@keyframes rep-spin {
+    to { transform: rotate(360deg); }
 }
 
-.reporting-summary li {
-  margin: 0.5rem 0;
-  font-size: 1rem;
+.rep-error {
+    text-align: center;
+    padding: 40px;
+    color: #ef4444;
+    font-size: 1rem;
+}
+
+/* ── Cabecera ──────────────────────────── */
+
+.rep-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+}
+
+.rep-title {
+    font-size: 1.75rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin: 0 0 6px;
+}
+
+.rep-subtitle {
+    font-size: 1rem;
+    color: #475569;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.rep-badge {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 2px 10px;
+}
+
+/* ── Tarjetas de métricas ─────────────── */
+
+.rep-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.rep-card {
+    border-radius: 20px;
+    padding: 24px 22px;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.rep-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px rgba(0,0,0,0.14);
+}
+
+.rep-card--blue   { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.rep-card--green  { background: linear-gradient(135deg, #22c55e, #15803d); }
+.rep-card--purple { background: linear-gradient(135deg, #a855f7, #7e22ce); }
+.rep-card--orange { background: linear-gradient(135deg, #f97316, #c2410c); }
+
+.rep-card__icon {
+    font-size: 1.8rem;
+    margin-bottom: 6px;
+}
+
+.rep-card__value {
+    font-size: 2.4rem;
+    font-weight: 800;
+    line-height: 1;
+}
+
+.rep-card__label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    opacity: 0.9;
+    margin-top: 4px;
+}
+
+.rep-card__sub {
+    font-size: 0.78rem;
+    opacity: 0.75;
+    margin-top: 2px;
+}
+
+/* ── Secciones ────────────────────────── */
+
+.rep-section {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 24px 26px;
+    margin-bottom: 28px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+}
+
+.rep-section__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.rep-section__title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.rep-empty {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.95rem;
+    padding: 24px 0;
+}
+
+/* ── Navegación de mes ────────────────── */
+
+.rep-month-nav {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.rep-month-nav button {
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+}
+
+.rep-month-nav button:hover {
+    background: #e2e8f0;
+}
+
+.rep-month-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #334155;
+    text-transform: capitalize;
+    min-width: 140px;
+    text-align: center;
+}
+
+/* ── Tabla ────────────────────────────── */
+
+.rep-table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+}
+
+.rep-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.rep-table th {
+    background: #f8fafc;
+    color: #64748b;
+    font-weight: 600;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rep-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f1f5f9;
+    color: #334155;
+    vertical-align: middle;
+}
+
+.rep-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.rep-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.rep-table tfoot td {
+    background: #f8fafc;
+    font-weight: 700;
+    color: #0f172a;
+    border-top: 2px solid #e2e8f0;
+    padding: 12px 14px;
+}
+
+/* ── Badges de estado / tipo ────────────── */
+
+.rep-open-badge {
+    background: #fef3c7;
+    color: #92400e;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 2px 8px;
+}
+
+.rep-tipo {
+    font-size: 0.82rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.rep-estado {
+    display: inline-block;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    text-transform: capitalize;
+}
+
+.rep-estado--abierto  { background: #fef9c3; color: #713f12; }
+.rep-estado--cerrado  { background: #dcfce7; color: #14532d; }
+.rep-estado--pendiente { background: #fef9c3; color: #713f12; }
+.rep-estado--aprobado  { background: #dcfce7; color: #14532d; }
+.rep-estado--rechazado { background: #fee2e2; color: #7f1d1d; }
+
+/* ── Grid de tareas ───────────────────── */
+
+.rep-tareas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+}
+
+.rep-tarea-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 18px;
+    background: #fafbfc;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.rep-tarea-card:hover {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.rep-tarea-card__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.rep-tarea-prioridad {
+    color: white;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 999px;
+    padding: 3px 10px;
+}
+
+.rep-tarea-estado {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+.rep-tarea-titulo {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #0f172a;
+    margin: 0;
+}
+
+.rep-tarea-desc {
+    font-size: 0.875rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.rep-tarea-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+    font-size: 0.78rem;
+    color: #94a3b8;
+}
+
+/* ── Responsive ───────────────────────── */
+
+@media (max-width: 640px) {
+    .rep-container {
+        padding: 20px 14px 40px;
+    }
+
+    .rep-title {
+        font-size: 1.4rem;
+    }
+
+    .rep-cards {
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+    }
+
+    .rep-card__value {
+        font-size: 1.8rem;
+    }
+
+    .rep-section {
+        padding: 18px 16px;
+    }
+
+    .rep-tareas-grid {
+        grid-template-columns: 1fr;
+    }
 }

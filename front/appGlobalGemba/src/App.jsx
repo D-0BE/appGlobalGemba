@@ -1,6 +1,5 @@
-
 import { useState } from 'react';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, useLocation, useNavigate } from 'react-router-dom';
 import './App.css';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
@@ -10,28 +9,37 @@ import Perfiles from './components/Perfiles';
 import Reporting from './components/Reporting';
 import Empleados from './components/Empleados';
 
-function App(){
+function App() {
     const location = useLocation();
+    const navigate = useNavigate();
     const [userRole, setUserRole] = useState(localStorage.getItem('role') || '');
-    
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        setUserRole('');
+        navigate('/');
+    };
+
     // Configuración base de enlaces
     const links = {
-        home: "Home",
-        vacaciones: "Vacaciones",
-        perfil: "Perfil",
-        reporting: "Reporting",
-    }
+        home: 'Home',
+        vacaciones: 'Vacaciones',
+        perfil: 'Perfil',
+        reporting: 'Reporting',
+    };
 
-    // Si el usuario es administrador, añadimos "Empleados"
-    if (userRole === 'admin') {
-        links.empleados = "Empleados";
+    // Si el usuario es administrador o jefe, añadimos "Empleados"
+    if (userRole === 'admin' || userRole === 'jefe') {
+        links.empleados = 'Empleados';
     }
 
     const showNavbar = location.pathname !== '/';
 
-    return(
+    return (
         <>
-            {showNavbar && <Navbar linksProp={links} />}
+            {showNavbar && <Navbar linksProp={links} onLogout={handleLogout} />}
             <main>
                 <Routes>
                     <Route path="/" element={<Login setUserRole={setUserRole} />} />
@@ -43,6 +51,7 @@ function App(){
                 </Routes>
             </main>
         </>
-    )
+    );
 }
+
 export default App;

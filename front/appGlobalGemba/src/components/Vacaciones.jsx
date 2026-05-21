@@ -1,5 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { getVacaciones, solicitarVacaciones, cancelarVacaciones } from '../api';
 import './Vacaciones.css';
+
+const VACATION_ALLOWANCE = 22;
 
 const getDateKey = (date) => {
     const d = new Date(date);
@@ -7,21 +10,19 @@ const getDateKey = (date) => {
     return d.toISOString().slice(0, 10);
 };
 
-const formatDateLong = (date) => {
-    return new Date(date).toLocaleDateString('es-ES', {
+const formatDateLong = (date) =>
+    new Date(date).toLocaleDateString('es-ES', {
         weekday: 'long',
         day: '2-digit',
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
     });
-};
 
-const formatMonthYear = (date) => {
-    return new Date(date).toLocaleDateString('es-ES', {
+const formatMonthYear = (date) =>
+    new Date(date).toLocaleDateString('es-ES', {
         month: 'long',
-        year: 'numeric'
+        year: 'numeric',
     });
-};
 
 const getMonthCalendar = (monthDate) => {
     const year = monthDate.getFullYear();
@@ -49,58 +50,120 @@ const getMonthCalendar = (monthDate) => {
     return weeks;
 };
 
-function Vacaciones() {
-    const VACATION_ALLOWANCE = 22;
+/** Expande un rango fecha_inicio→fecha_fin en días individuales (YYYY-MM-DD) */
+function expandirRango(fechaInicio, fechaFin) {
+    const dias = [];
+    const start = new Date(fechaInicio);
+    const end = new Date(fechaFin);
+    start.setHours(0, 0, 0, 0);
+    end.setHours(0, 0, 0, 0);
 
+    const cur = new Date(start);
+    while (cur <= end) {
+        dias.push(getDateKey(cur));
+        cur.setDate(cur.getDate() + 1);
+    }
+    return dias;
+}
+
+function Vacaciones() {
     const [monthDate, setMonthDate] = useState(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         return now;
     });
 
-    const [assignedDays, setAssignedDays] = useState(() => new Set([
-        getDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 10)),
-        getDateKey(new Date(new Date().getFullYear(), new Date().getMonth(), 15))
-    ]));
-
+    // solicitudes: [{ id, fecha_inicio, fecha_fin, estado, ... }]
+    const [solicitudes, setSolicitudes] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [actionError, setActionError] = useState('');
     const [showAssigned, setShowAssigned] = useState(false);
 
     const monthCalendar = useMemo(() => getMonthCalendar(monthDate), [monthDate]);
 
-    const remainingDays = VACATION_ALLOWANCE - assignedDays.size;
+    // ── Cargar solicitudes ────────────────────────────
+    const cargarSolicitudes = useCallback(async () => {
+        try {
+            const data = await getVacaciones();
+            setSolicitudes(data || []);
+        } catch {
+            // silencioso, mantenemos el estado anterior
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    const toggleDay = (date) => {
+    useEffect(() => {
+        cargarSolicitudes();
+    }, [cargarSolicitudes]);
+
+    // ── Mapas de días por estado ──────────────────────
+    const { diasAprobados, diasPendientes } = useMemo(() => {
+        const aprobados = new Set();
+        const pendientes = new Set();
+
+        solicitudes.forEach((s) => {
+            const dias = expandirRango(s.fecha_inicio, s.fecha_fin);
+            if (s.estado === 'aprobado') dias.forEach((d) => aprobados.add(d));
+            else if (s.estado === 'pendiente') dias.forEach((d) => pendientes.add(d));
+        });
+
+        return { diasAprobados: aprobados, diasPendientes: pendientes };
+    }, [solicitudes]);
+
+    // Días asignados (aprobados + pendientes)
+    const diasAsignados = useMemo(() => new Set([...diasAprobados, ...diasPendientes]), [diasAprobados, diasPendientes]);
+
+    const remainingDays = VACATION_ALLOWANCE - diasAsignados.size;
+
+    // ── Alternar día del calendario ───────────────────
+    const toggleDay = async (date) => {
         if (!date) return;
         const dayKey = getDateKey(date);
-        setAssignedDays((prev) => {
-            const next = new Set(prev);
-            if (next.has(dayKey)) {
-                next.delete(dayKey);
-            } else {
-                next.add(dayKey);
+        setActionError('');
+
+        // Buscar si ya hay solicitud que cubra ese día
+        const solicitudExistente = solicitudes.find((s) => {
+            const dias = expandirRango(s.fecha_inicio, s.fecha_fin);
+            return dias.includes(dayKey) && s.estado === 'pendiente';
+        });
+
+        if (solicitudExistente) {
+            // Cancelar la solicitud
+            try {
+                await cancelarVacaciones(solicitudExistente.id);
+                await cargarSolicitudes();
+            } catch (err) {
+                setActionError(err.message || 'Error al cancelar la solicitud.');
             }
-            return next;
-        });
+        } else if (!diasAprobados.has(dayKey)) {
+            // Crear nueva solicitud de un solo día
+            try {
+                await solicitarVacaciones(dayKey, dayKey);
+                await cargarSolicitudes();
+            } catch (err) {
+                setActionError(err.message || 'Error al solicitar el día de vacaciones.');
+            }
+        }
     };
 
-    const removeAssignedDay = (dayKey) => {
-        setAssignedDays((prev) => {
-            const next = new Set(prev);
-            next.delete(dayKey);
-            return next;
-        });
+    const cancelarSolicitud = async (id) => {
+        setActionError('');
+        try {
+            await cancelarVacaciones(id);
+            await cargarSolicitudes();
+        } catch (err) {
+            setActionError(err.message || 'Error al cancelar la solicitud.');
+        }
     };
-
-    const assignedList = useMemo(
-        () => Array.from(assignedDays).sort(),
-        [assignedDays]
-    );
 
     const handleMonthChange = (offset) => {
         const next = new Date(monthDate);
         next.setMonth(next.getMonth() + offset);
         setMonthDate(next);
     };
+
+    if (loading) return <p style={{ padding: '24px' }}>Cargando vacaciones...</p>;
 
     return (
         <div className="vacaciones-container">
@@ -112,6 +175,10 @@ function Vacaciones() {
                     </div>
                 </div>
             </div>
+
+            {actionError && (
+                <p style={{ color: 'red', padding: '8px 0', textAlign: 'center' }}>{actionError}</p>
+            )}
 
             <div className="vacaciones-calendar-wrapper">
                 <div className="vacaciones-calendar">
@@ -140,24 +207,39 @@ function Vacaciones() {
                             </div>
                         ))}
                     </div>
+
                     <div className="vacaciones-days-grid">
                         {monthCalendar.map((week, weekIndex) =>
                             week.map((day, dayIndex) => {
                                 const dayKey = day ? getDateKey(day) : null;
-                                const selected = dayKey ? assignedDays.has(dayKey) : false;
+                                const isAprobado = dayKey ? diasAprobados.has(dayKey) : false;
+                                const isPendiente = dayKey ? diasPendientes.has(dayKey) : false;
+                                const selected = isAprobado || isPendiente;
+
+                                let extraClass = '';
+                                if (isAprobado) extraClass = 'aprobado';
+                                else if (isPendiente) extraClass = 'pendiente';
+
                                 return (
                                     <button
                                         key={`${weekIndex}-${dayIndex}`}
                                         type="button"
-                                        className={`vacaciones-day ${selected ? 'selected' : ''} ${!day ? 'empty' : ''}`}
+                                        className={`vacaciones-day ${selected ? 'selected' : ''} ${extraClass} ${!day ? 'empty' : ''}`}
                                         onClick={() => toggleDay(day)}
-                                        disabled={!day}
+                                        disabled={!day || isAprobado}
+                                        title={isAprobado ? 'Aprobado' : isPendiente ? 'Pendiente' : ''}
                                     >
                                         {day ? day.getDate() : ''}
                                     </button>
                                 );
                             })
                         )}
+                    </div>
+
+                    {/* Leyenda */}
+                    <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '13px', justifyContent: 'center' }}>
+                        <span>🟢 Aprobado</span>
+                        <span>🟡 Pendiente</span>
                     </div>
                 </div>
             </div>
@@ -170,25 +252,35 @@ function Vacaciones() {
                 >
                     Tus vacaciones {showAssigned ? '▲' : '▼'}
                 </button>
+
                 {showAssigned && (
                     <div className="assigned-panel">
                         <div className="assigned-summary">
-                            Vacaciones asignadas: {assignedList.length} día{assignedList.length === 1 ? '' : 's'}
+                            Solicitudes: {solicitudes.length}
                         </div>
                         <div className="assigned-list">
-                            {assignedList.length === 0 ? (
-                                <div className="assigned-empty">No tienes días de vacaciones asignados.</div>
+                            {solicitudes.length === 0 ? (
+                                <div className="assigned-empty">No tienes solicitudes de vacaciones.</div>
                             ) : (
-                                assignedList.map((dayKey) => (
-                                    <div key={dayKey} className="assigned-item">
-                                        <span>{formatDateLong(dayKey)}</span>
-                                        <button
-                                            type="button"
-                                            className="assigned-remove"
-                                            onClick={() => removeAssignedDay(dayKey)}
-                                        >
-                                            Eliminar
-                                        </button>
+                                solicitudes.map((s) => (
+                                    <div key={s.id} className="assigned-item">
+                                        <span>
+                                            {formatDateLong(s.fecha_inicio)}
+                                            {s.fecha_inicio !== s.fecha_fin.slice(0, 10) && ` → ${formatDateLong(s.fecha_fin)}`}
+                                            {' '}
+                                            <em style={{ color: s.estado === 'aprobado' ? 'green' : s.estado === 'rechazado' ? 'red' : '#b8860b' }}>
+                                                ({s.estado})
+                                            </em>
+                                        </span>
+                                        {s.estado === 'pendiente' && (
+                                            <button
+                                                type="button"
+                                                className="assigned-remove"
+                                                onClick={() => cancelarSolicitud(s.id)}
+                                            >
+                                                Cancelar
+                                            </button>
+                                        )}
                                     </div>
                                 ))
                             )}
