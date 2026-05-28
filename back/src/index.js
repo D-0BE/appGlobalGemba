@@ -14,7 +14,14 @@ const PORT = process.env.PORT || 3001;
 
 // ── Middleware global ──────────────────────────
 app.use(cors({
-  origin: 'http://localhost:5173', // Vite dev server
+  origin: (origin, callback) => {
+    // Permitir: sin origin (Postman, curl), localhost y cualquier IP de red local
+    if (!origin || origin.includes('localhost') || origin.includes('127.0.0.1') || origin.match(/^http:\/\/192\.168\.\d+\.\d+/)) {
+      callback(null, true);
+    } else {
+      callback(new Error('No permitido por CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());
