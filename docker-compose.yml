@@ -24,6 +24,21 @@ services:
       retries: 10
       start_period: 30s
 
+  # ── Carga automática de datos ────────────────────────────────
+  # Se ejecuta SIEMPRE al hacer docker compose up — no requiere comandos manuales
+  init-db:
+    image: postgres:16-alpine
+    container_name: globalgemba_init
+    restart: "no"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGPASSWORD: gemba_pass_dev
+    volumes:
+      - ./back/database/init_all.sql:/init_all.sql
+    command: psql -h postgres -U gemba_user -d globalgemba -f /init_all.sql
+
   # ── Backend Express + Node.js ────────────────────────────────
   api:
     build: ./back
@@ -42,6 +57,9 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      init-db:
+        condition: service_completed_successfully
+
 
   # ── Frontend React + Vite ────────────────────────────────────
   frontend:

@@ -220,3 +220,15 @@
     background: #f8fafc;
     color: #475569;
 }
+
+.legend-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+}
+
+.legend-dot.aprobado { background: #22c55e; }
+.legend-dot.pendiente { background: #eab308; }

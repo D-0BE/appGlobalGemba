@@ -142,7 +142,7 @@ export default function Reporting() {
     if (error) {
         return (
             <div className="rep-container">
-                <p className="rep-error">⚠️ {error}</p>
+                <p className="rep-error">{error}</p>
             </div>
         );
     }
@@ -153,7 +153,7 @@ export default function Reporting() {
             {/* ── Cabecera ── */}
             <div className="rep-header">
                 <div>
-                    <h2 className="rep-title">📊 Reporting Personal</h2>
+                    <h2 className="rep-title">Reporting Personal</h2>
                     {usuario && (
                         <p className="rep-subtitle">
                             {usuario.nombre} {usuario.apellidos}
@@ -166,25 +166,21 @@ export default function Reporting() {
             {/* ── Tarjetas de métricas ── */}
             <div className="rep-cards">
                 <div className="rep-card rep-card--blue">
-                    <div className="rep-card__icon">🕐</div>
                     <div className="rep-card__value">{metricas.totalHoras}h</div>
                     <div className="rep-card__label">Horas trabajadas</div>
                     <div className="rep-card__sub">{nombreMes(mes)}</div>
                 </div>
                 <div className="rep-card rep-card--green">
-                    <div className="rep-card__icon">📅</div>
                     <div className="rep-card__value">{metricas.diasTrabajados}</div>
                     <div className="rep-card__label">Días fichados</div>
                     <div className="rep-card__sub">{nombreMes(mes)}</div>
                 </div>
                 <div className="rep-card rep-card--purple">
-                    <div className="rep-card__icon">🌴</div>
                     <div className="rep-card__value">{metricas.diasDisponibles}</div>
                     <div className="rep-card__label">Vacaciones disponibles</div>
                     <div className="rep-card__sub">{metricas.diasVacaciones} tomados · {metricas.vacPendientes} pendientes</div>
                 </div>
                 <div className="rep-card rep-card--orange">
-                    <div className="rep-card__icon">✅</div>
                     <div className="rep-card__value">{metricas.tareasCompletadas}</div>
                     <div className="rep-card__label">Tareas completadas</div>
                     <div className="rep-card__sub">{metricas.tareasPendientes} en curso / pendientes</div>
@@ -230,9 +226,9 @@ export default function Reporting() {
                                             <td><strong>{horas > 0 ? `${horas.toFixed(1)}h` : '—'}</strong></td>
                                             <td>
                                                 <span className={`rep-tipo rep-tipo--${f.tipo}`}>
-                                                    {f.tipo === 'teletrabajo' ? '🏠 Teletrabajo'
-                                                     : f.tipo === 'viaje' ? '✈️ Viaje'
-                                                     : '🏢 Normal'}
+                                                    {f.tipo === 'teletrabajo' ? 'Teletrabajo'
+                                                     : f.tipo === 'viaje' ? 'Viaje'
+                                                     : 'Normal'}
                                                 </span>
                                             </td>
                                             <td>
@@ -286,9 +282,9 @@ export default function Reporting() {
                                     <p className="rep-tarea-desc">{t.descripcion}</p>
                                 )}
                                 <div className="rep-tarea-footer">
-                                    {t.departamento && <span>🏢 {t.departamento}</span>}
+                                    {t.departamento && <span>{t.departamento}</span>}
                                     {t.fecha_limite && (
-                                        <span>📆 Límite: {formatFecha(t.fecha_limite)}</span>
+                                        <span>Límite: {formatFecha(t.fecha_limite)}</span>
                                     )}
                                 </div>
                             </div>

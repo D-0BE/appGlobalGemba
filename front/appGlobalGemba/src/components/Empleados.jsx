@@ -155,7 +155,7 @@ function Empleados() {
                                 <td>{emp.email}</td>
                                 <td>{emp.rol}</td>
                                 <td>{emp.departamento || '—'}</td>
-                                <td>{emp.activo ? '✅' : '❌'}</td>
+                                <td>{emp.activo ? 'Si' : 'No'}</td>
                                 <td>
                                     <button
                                         className="btn-sm btn-edit"

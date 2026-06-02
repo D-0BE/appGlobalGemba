@@ -238,8 +238,8 @@ function Vacaciones() {
 
                     {/* Leyenda */}
                     <div style={{ display: 'flex', gap: '16px', marginTop: '12px', fontSize: '13px', justifyContent: 'center' }}>
-                        <span>🟢 Aprobado</span>
-                        <span>🟡 Pendiente</span>
+                        <span><span className="legend-dot aprobado"></span> Aprobado</span>
+                        <span><span className="legend-dot pendiente"></span> Pendiente</span>
                     </div>
                 </div>
             </div>

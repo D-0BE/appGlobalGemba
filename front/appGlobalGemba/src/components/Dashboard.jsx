@@ -168,13 +168,13 @@ function Dashboard() {
                 const tipo = isAbsent ? 'normal' : 'normal'; // puede extenderse
                 const nuevo = await registrarEntrada(tipo);
                 setFichajeActivo(nuevo);
-                setFichajeSuccess('✅ Entrada registrada correctamente.');
+                setFichajeSuccess('Entrada registrada correctamente.');
             } else {
                 // Registrar salida — calcular pausa si hay datos de horario
                 const pausaMinutos = 0; // podría calcularse desde schedule
                 await registrarSalida(fichajeActivo.id, pausaMinutos);
                 setFichajeActivo(null);
-                setFichajeSuccess('✅ Salida registrada correctamente.');
+                setFichajeSuccess('Salida registrada correctamente.');
                 // Recargar fichajes del mes
                 await cargarFichajes();
             }
@@ -191,7 +191,7 @@ function Dashboard() {
                 <div className="date-display">
                     {formatMonthYear(currentDate)}
                     {selectedDateLocked && (
-                        <span className="locked-badge">🔒 No editable</span>
+                        <span className="locked-badge">No editable</span>
                     )}
                 </div>
                 <div className="absent-checkbox">
@@ -210,7 +210,7 @@ function Dashboard() {
             {/* Estado del fichaje activo */}
             {fichajeActivo && (
                 <div style={{ background: '#e8f5e9', padding: '10px 16px', borderRadius: '8px', marginBottom: '12px', color: '#2e7d32' }}>
-                    🟢 Fichaje abierto desde{' '}
+                    Fichaje abierto desde{' '}
                     {new Date(fichajeActivo.entrada).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                 </div>
             )}
@@ -264,7 +264,7 @@ function Dashboard() {
             <div className="date-summary">
                 <div className="date-summary-label">Fecha seleccionada:</div>
                 <div>{formatDate(currentDate)}</div>
-                {selectedDateLocked && <div className="locked-badge">🔒 No editable</div>}
+                {selectedDateLocked && <div className="locked-badge">No editable</div>}
             </div>
 
             <table className={`schedule-table ${selectedDateLocked ? 'locked' : ''}`}>
