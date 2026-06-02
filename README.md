@@ -4,227 +4,151 @@ Sistema de gestión de empleados: fichajes, vacaciones, tareas e informes.
 
 ---
 
+## 🚀 Cómo levantarlo en local (en tu casa)
+
+> Solo necesitas **Docker Desktop** instalado. Nada más.
+
+### 1. Instala Docker Desktop (si no lo tienes)
+
+👉 Descárgalo aquí: https://www.docker.com/products/docker-desktop/
+
+Instálalo, ábrelo y espera a que el icono de la ballena 🐳 aparezca en la barra de tareas.
+
+---
+
+### 2. Clona el repositorio
+
+Abre una terminal (PowerShell o CMD) y ejecuta:
+
+```bash
+git clone https://github.com/D-0BE/appGlobalGemba.git
+cd appGlobalGemba
+```
+
+---
+
+### 3. Levanta todo con un solo comando
+
+```bash
+docker compose up
+```
+
+Espera unos 30-60 segundos mientras se construyen las imágenes y se inicializa la base de datos.  
+Cuando veas `🚀 API GlobalGemba corriendo en http://localhost:3001`, ya está listo.
+
+---
+
+### 4. Abre la app en el navegador
+
+👉 **http://localhost:5173**
+
+#### Credenciales de acceso
+
+| Email | Contraseña | Rol |
+|-------|-----------|-----|
+| `admin@globalgemba.com` | `GlobalGemba2026!` | Admin |
+| `carlos.rodriguez@globalgemba.com` | `GlobalGemba2026!` | Jefe |
+| `laura.martinez@globalgemba.com` | `GlobalGemba2026!` | Jefe |
+| `alvaro.garcia@globalgemba.com` | `GlobalGemba2026!` | Empleado |
+| `rodrigo.lopez@globalgemba.com` | `GlobalGemba2026!` | Empleado |
+| `roberto.sanchez@globalgemba.com` | `GlobalGemba2026!` | Empleado |
+| `jorge.fernandez@globalgemba.com` | `GlobalGemba2026!` | Empleado |
+| `david.perez@globalgemba.com` | `GlobalGemba2026!` | Empleado |
+
+---
+
+### 5. Parar la app
+
+```bash
+# Parar (sin borrar datos)
+docker compose down
+
+# Parar y borrar todos los datos (reset completo)
+docker compose down -v
+```
+
+---
+
+## 🐛 Solución de problemas
+
+### El navegador no carga nada en localhost:5173
+Espera 1 minuto más y recarga. Docker necesita tiempo para construir las imágenes la primera vez.
+
+### Error "port already in use"
+Algún puerto (5173, 3001 o 5432) está ocupado. Cierra otras apps o reinicia Docker Desktop.
+
+### Los datos no aparecen / error al hacer login
+Haz un reset completo:
+```bash
+docker compose down -v
+docker compose up
+```
+
+### No tengo git instalado
+Descárgalo en https://git-scm.com/ o descarga el ZIP del repo directamente desde GitHub.
+
+---
+
+## Servicios disponibles
+
+| Servicio | URL | Descripción |
+|----------|-----|-------------|
+| **Frontend** | http://localhost:5173 | App principal |
+| **API** | http://localhost:3001/api/health | Backend REST |
+| **pgAdmin** | http://localhost:5050 | Interfaz visual de la BD |
+
+pgAdmin → Email: `admin@globalgemba.com` · Password: `admin123`
+
+---
+
 ## Estructura del proyecto
 
 ```
 appGlobalGemba/
 ├── back/
 │   ├── database/
-│   │   ├── schema.sql          ← Esquema completo de PostgreSQL
-│   │   └── seed.sql            ← Datos de prueba (equipo + tareas)
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── db.js           ← Conexión a PostgreSQL (pg Pool)
-│   │   ├── middleware/
-│   │   │   └── auth.js         ← Verificación de JWT + control de roles
-│   │   ├── routes/
-│   │   │   ├── auth.js         ← POST /login · POST /logout
-│   │   │   ├── usuarios.js     ← GET /me · GET /:id · PUT /:id · GET /
-│   │   │   ├── fichajes.js     ← GET · GET /activo · POST /entrada · PUT /:id/salida
-│   │   │   ├── vacaciones.js   ← GET · POST · PUT /aprobar · PUT /rechazar · DELETE
-│   │   │   └── tareas.js       ← GET · GET /:id · POST · PUT /:id
-│   │   └── index.js            ← Entry point Express
-│   ├── .env                    ← Variables de entorno locales (NO subir a git)
-│   ├── .env.example            ← Plantilla de variables de entorno
-│   ├── .gitignore
-│   ├── package.json
-│   └── docker-compose.yml
-└── front/
-    └── appGlobalGemba/         ← App React + Vite
-        └── src/
-            ├── components/
-            │   ├── Login.jsx
-            │   ├── Dashboard.jsx
-            │   ├── Vacaciones.jsx
-            │   └── Perfiles.jsx
-            └── App.jsx
+│   │   ├── schema.sql       ← Esquema de PostgreSQL
+│   │   ├── seed.sql         ← Datos de prueba
+│   │   ├── fix_passwords.sql← Corrección de contraseñas
+│   │   └── init_all.sql     ← Script de inicialización completo
+│   └── src/
+│       ├── config/db.js     ← Conexión a PostgreSQL
+│       ├── middleware/auth.js← JWT + control de roles
+│       └── routes/          ← auth, usuarios, fichajes, vacaciones, tareas
+└── front/appGlobalGemba/    ← App React + Vite
+    └── src/
+        ├── components/      ← Login, Dashboard, Vacaciones, Perfiles...
+        ├── api.js           ← Llamadas al backend
+        └── App.jsx
 ```
 
 ---
 
-## Base de datos
+## API — Endpoints principales
 
-### Tablas
+> Todas las rutas marcadas con 🔒 requieren `Authorization: Bearer <token>`
 
-| Tabla             | Descripción                                       |
-|-------------------|---------------------------------------------------|
-| `roles`           | admin · jefe · empleado                           |
-| `departamentos`   | Unidades organizativas con jefe asignado          |
-| `usuarios`        | Empleados con rol, departamento y foto            |
-| `horarios`        | Franjas horarias por usuario y días de la semana  |
-| `fichajes`        | Entrada/salida con tipo (normal/teletrabajo/viaje) |
-| `vacaciones`      | Solicitudes con flujo pendiente→aprobado/rechazado |
-| `festivos`        | Días festivos nacionales y locales                |
-| `tareas`          | Tareas con estado, prioridad y fecha límite       |
-| `tareas_usuarios` | Asignación N:M de tareas a empleados              |
-| `informes`        | Informes de actividad vinculados a tareas         |
-
-### Diagrama de relaciones
-
-```
-roles ──── usuarios ──── departamentos
-               │               │
-           horarios         tareas ──── tareas_usuarios
-           fichajes             │
-           vacaciones       informes
-```
-
----
-
-## Levantar el entorno
-
-### Requisitos
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y en ejecución
-- [Node.js](https://nodejs.org/) v18+
-
----
-
-### 1. Base de datos (PostgreSQL + pgAdmin)
-
-```bash
-cd back
-docker-compose up -d
-```
-
-| Parámetro | Valor             |
-|-----------|-------------------|
-| Host      | `localhost`       |
-| Puerto    | `5432`            |
-| BD        | `globalgemba`     |
-| Usuario   | `gemba_user`      |
-| Password  | `gemba_pass_dev`  |
-
-**pgAdmin** → [http://localhost:5050](http://localhost:5050)
-- Email: `admin@globalgemba.com` · Password: `admin123`
-- Conectar servidor: `Host: postgres` · Puerto: `5432` · User: `gemba_user`
-
-```bash
-# Ver logs
-docker-compose logs -f postgres
-
-# Parar
-docker-compose down
-
-# Reset completo (borra datos)
-docker-compose down -v
-```
-
----
-
-### 2. API — Node.js + Express
-
-```bash
-cd back
-
-# Primera vez: instalar dependencias
-npm install
-
-# Crear fichero de entorno local (solo la primera vez)
-copy .env.example .env   # Windows
-cp .env.example .env     # Mac/Linux
-
-# Arrancar en modo desarrollo (con hot-reload)
-npm run dev
-```
-
-La API queda disponible en **http://localhost:3001**
-
-Verificar que funciona:
-```
-GET http://localhost:3001/api/health
-→ { "status": "ok", "timestamp": "..." }
-```
-
----
-
-### 3. Frontend — React + Vite
-
-```bash
-cd front/appGlobalGemba
-
-# Primera vez
-npm install
-
-# Arrancar
-npm run dev
-```
-
-El frontend queda disponible en **http://localhost:5173**
-
----
-
-## API — Endpoints
-
-> Todas las rutas marcadas con 🔒 requieren cabecera `Authorization: Bearer <token>`
-
-### Autenticación
-| Método | Ruta               | Descripción             | Auth |
-|--------|--------------------|-------------------------|------|
-| POST   | `/api/auth/login`  | Login → devuelve JWT    | ❌   |
-| POST   | `/api/auth/logout` | Cierra sesión           | 🔒   |
-
-### Usuarios
-| Método | Ruta                  | Descripción                         | Auth       |
-|--------|-----------------------|-------------------------------------|------------|
-| GET    | `/api/usuarios/me`    | Perfil del usuario autenticado      | 🔒         |
-| GET    | `/api/usuarios/:id`   | Perfil de cualquier usuario         | 🔒         |
-| PUT    | `/api/usuarios/:id`   | Actualizar perfil (propio o admin)  | 🔒         |
-| GET    | `/api/usuarios`       | Listar todos los usuarios           | 🔒 jefe/admin |
-
-### Fichajes
-| Método | Ruta                       | Descripción                          | Auth |
-|--------|----------------------------|--------------------------------------|------|
-| GET    | `/api/fichajes`             | Mis fichajes (`?mes=YYYY-MM`)        | 🔒   |
-| GET    | `/api/fichajes/activo`      | Fichaje abierto actualmente          | 🔒   |
-| POST   | `/api/fichajes/entrada`     | Registrar entrada (`tipo` opcional)  | 🔒   |
-| PUT    | `/api/fichajes/:id/salida`  | Registrar salida                     | 🔒   |
-
-### Vacaciones
-| Método | Ruta                            | Descripción                        | Auth          |
-|--------|---------------------------------|------------------------------------|---------------|
-| GET    | `/api/vacaciones`               | Mis solicitudes (`?estado=...`)    | 🔒            |
-| POST   | `/api/vacaciones`               | Nueva solicitud                    | 🔒            |
-| PUT    | `/api/vacaciones/:id/aprobar`   | Aprobar solicitud                  | 🔒 jefe/admin |
-| PUT    | `/api/vacaciones/:id/rechazar`  | Rechazar solicitud                 | 🔒 jefe/admin |
-| DELETE | `/api/vacaciones/:id`           | Cancelar solicitud pendiente propia| 🔒            |
-
-### Tareas
-| Método | Ruta              | Descripción                            | Auth          |
-|--------|-------------------|----------------------------------------|---------------|
-| GET    | `/api/tareas`     | Mis tareas (`?estado=...`)             | 🔒            |
-| GET    | `/api/tareas/:id` | Detalle de una tarea                   | 🔒            |
-| POST   | `/api/tareas`     | Crear tarea (con asignación)           | 🔒 jefe/admin |
-| PUT    | `/api/tareas/:id` | Actualizar tarea / cambiar estado      | 🔒            |
-
----
-
-## Variables de entorno
-
-El fichero `.env.example` contiene la plantilla. Cópialo a `.env` en tu máquina local:
-
-```env
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=globalgemba
-DB_USER=gemba_user
-DB_PASSWORD=gemba_pass_dev
-JWT_SECRET=cambia_esto_en_produccion
-PORT=3001
-```
-
-> ⚠️ El `.env` está en `.gitignore` y **nunca debe subirse al repositorio**.  
-> El `.env.example` sí sube a git y sirve de documentación para el equipo.
+| Método | Ruta | Descripción | Auth |
+|--------|------|-------------|------|
+| POST | `/api/auth/login` | Login → devuelve JWT | ❌ |
+| GET | `/api/usuarios/me` | Mi perfil | 🔒 |
+| GET | `/api/fichajes` | Mis fichajes | 🔒 |
+| POST | `/api/fichajes/entrada` | Registrar entrada | 🔒 |
+| PUT | `/api/fichajes/:id/salida` | Registrar salida | 🔒 |
+| GET | `/api/vacaciones` | Mis solicitudes | 🔒 |
+| POST | `/api/vacaciones` | Nueva solicitud | 🔒 |
+| GET | `/api/tareas` | Mis tareas | 🔒 |
 
 ---
 
 ## Equipo
 
-| Área         | Tarea                             | Responsable     | Estado       |
-|--------------|-----------------------------------|-----------------|--------------|
-| **Backend**  | Base de datos (schema + seed)     | Marco           | ✅ Completo  |
-| **Backend**  | API REST (Express + JWT)          | Todos           | ✅ Completo  |
-| **Frontend** | Login                             | Álvaro          | 🔧 En curso  |
-| **Frontend** | Dashboard / Calendario / Fichajes | Rodrigo + David | 🔧 En curso  |
-| **Frontend** | Vacaciones                        | Roberto         | 🔧 En curso  |
-| **Frontend** | Perfiles / Ajustes                | Jorge           | 🔧 En curso  |
-| **Admin**    | Gestión y reporting               | (pendiente)     | ⏳ Pendiente |
+| Área | Tarea | Responsable | Estado |
+|------|-------|-------------|--------|
+| **Backend** | Base de datos (schema + seed) | Marco | ✅ Completo |
+| **Backend** | API REST (Express + JWT) | Todos | ✅ Completo |
+| **Frontend** | Login | Álvaro | 🔧 En curso |
+| **Frontend** | Dashboard / Calendario / Fichajes | Rodrigo + David | 🔧 En curso |
+| **Frontend** | Vacaciones | Roberto | 🔧 En curso |
+| **Frontend** | Perfiles / Ajustes | Jorge | 🔧 En curso |
+| **Admin** | Gestión y reporting | (pendiente) | ⏳ Pendiente |
