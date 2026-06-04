@@ -216,7 +216,7 @@ function Dashboard() {
                 <div className="turno-card">
                     <div className="turno-titulo">Tu turno</div>
                     <div className="turno-horas">
-                        🕘 {horario.entrada} – {horario.salida}
+                        {horario.entrada} – {horario.salida}
                     </div>
                     <div className="turno-dias">
                         {[1, 2, 3, 4, 5, 6, 7].map((d) => (
@@ -229,7 +229,7 @@ function Dashboard() {
                         ))}
                     </div>
                     {!esHoyLaborable && (
-                        <div className="turno-aviso">🔴 Hoy no es día laborable según tu horario</div>
+                        <div className="turno-aviso">Hoy no es día laborable según tu horario</div>
                     )}
                 </div>
             )}
@@ -237,7 +237,7 @@ function Dashboard() {
             {/* Estado del fichaje activo */}
             {fichajeActivo && (
                 <div style={{ background: '#e8f5e9', padding: '10px 16px', borderRadius: '8px', marginBottom: '12px', color: '#2e7d32' }}>
-                    ✅ Fichaje abierto desde{' '}
+                    Fichaje abierto desde{' '}
                     {new Date(fichajeActivo.entrada).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}
                 </div>
             )}
@@ -335,8 +335,8 @@ function Dashboard() {
                     {loadingFichaje
                         ? 'Procesando...'
                         : fichajeActivo
-                        ? '🔴 Registrar Salida'
-                        : '🟢 Registrar Entrada'}
+                        ? 'Registrar Salida'
+                        : 'Registrar Entrada'}
                 </button>
             </div>
         </div>

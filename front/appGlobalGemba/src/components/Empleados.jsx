@@ -143,7 +143,7 @@ function Empleados() {
             {/* ── Formulario crear / editar ── */}
             {modo && (
                 <div className="formulario-empleado">
-                    <h3>{modo === 'crear' ? '➕ Nuevo Empleado' : '✏️ Editar Empleado'}</h3>
+                    <h3>{modo === 'crear' ? 'Nuevo Empleado' : 'Editar Empleado'}</h3>
                     <form onSubmit={handleGuardar}>
                         <div className="form-grid">
                             <div className="form-group">
@@ -252,10 +252,10 @@ function Empleados() {
                                 <td>{emp.departamento || '—'}</td>
                                 <td className="acciones-col">
                                     <button className="btn-sm btn-edit" onClick={() => handleEditar(emp)}>
-                                        ✏️ Editar
+                                        Editar
                                     </button>
                                     <button className="btn-sm btn-danger" onClick={() => handleToggleActivo(emp)}>
-                                        🔒 Bloquear
+                                        Bloquear
                                     </button>
                                 </td>
                             </tr>
@@ -290,7 +290,7 @@ function Empleados() {
                                     <td>{emp.departamento || '—'}</td>
                                     <td className="acciones-col">
                                         <button className="btn-sm btn-success" onClick={() => handleToggleActivo(emp)}>
-                                            🔓 Activar
+                                            Activar
                                         </button>
                                     </td>
                                 </tr>

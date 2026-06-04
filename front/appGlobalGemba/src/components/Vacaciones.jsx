@@ -222,7 +222,7 @@ function Vacaciones() {
             {esAdmin && (
                 <div className="admin-panel">
                     <h3 className="admin-panel-title">
-                        📋 Solicitudes pendientes
+                        Solicitudes pendientes
                         {pendientes.length > 0 && (
                             <span className="admin-badge">{pendientes.length}</span>
                         )}
@@ -232,7 +232,7 @@ function Vacaciones() {
                     {actionOk    && <p className="admin-ok">{actionOk}</p>}
 
                     {pendientes.length === 0 ? (
-                        <p className="admin-empty">No hay solicitudes pendientes. ✅</p>
+                        <p className="admin-empty">No hay solicitudes pendientes.</p>
                     ) : (
                         <div className="admin-lista">
                             {pendientes.map((s) => (
@@ -250,13 +250,13 @@ function Vacaciones() {
                                             className="btn-accion aprobar"
                                             onClick={() => handleAprobar(s.id)}
                                         >
-                                            ✅ Aprobar
+                                            Aprobar
                                         </button>
                                         <button
                                             className="btn-accion rechazar"
                                             onClick={() => handleRechazarClick(s.id)}
                                         >
-                                            ❌ Rechazar
+                                            Rechazar
                                         </button>
                                     </div>
                                 </div>
