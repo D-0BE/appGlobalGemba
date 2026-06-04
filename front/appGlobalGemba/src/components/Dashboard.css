@@ -286,3 +286,54 @@
     font-size: 0.95rem;
     color: #666;
 }
+
+/* ── Tarjeta de turno real desde la BD ─── */
+.turno-card {
+    background: linear-gradient(135deg, #e8f4fd 0%, #dbeffe 100%);
+    border: 1px solid #b3d9f7;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.turno-titulo {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #1a6fa0;
+    letter-spacing: 0.5px;
+}
+
+.turno-horas {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #0d4f7a;
+}
+
+.turno-dias {
+    display: flex;
+    gap: 6px;
+}
+
+.turno-dia {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 4px;
+    background: #c7e5f8;
+    color: #5a9cbf;
+}
+
+.turno-dia.activo {
+    background: #1a6fa0;
+    color: white;
+}
+
+.turno-aviso {
+    font-size: 0.82rem;
+    color: #c0392b;
+    font-weight: 600;
+}

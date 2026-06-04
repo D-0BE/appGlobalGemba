@@ -53,7 +53,7 @@ export function logout() {
 // USUARIOS
 // ─────────────────────────────────────────────────────
 
-/** GET /api/usuarios/me — datos del usuario autenticado */
+/** GET /api/usuarios/me — datos del usuario autenticado + horario */
 export function getMe() {
   return request('/usuarios/me');
 }
@@ -63,12 +63,30 @@ export function getUsuarios() {
   return request('/usuarios');
 }
 
-/** PUT /api/usuarios/:id — actualiza datos editables */
+/** GET /api/usuarios/departamentos — lista de departamentos */
+export function getDepartamentos() {
+  return request('/usuarios/departamentos');
+}
+
+/** POST /api/usuarios — crear nuevo empleado (admin) */
+export function crearUsuario(data) {
+  return request('/usuarios', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+/** PUT /api/usuarios/:id — actualizar datos */
 export function updateUsuario(id, data) {
   return request(`/usuarios/${id}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });
+}
+
+/** PATCH /api/usuarios/:id/toggle-activo — bloquear/activar (admin) */
+export function toggleActivoUsuario(id) {
+  return request(`/usuarios/${id}/toggle-activo`, { method: 'PATCH' });
 }
 
 // ─────────────────────────────────────────────────────
@@ -123,6 +141,19 @@ export function solicitarVacaciones(fecha_inicio, fecha_fin) {
 /** DELETE /api/vacaciones/:id */
 export function cancelarVacaciones(id) {
   return request(`/vacaciones/${id}`, { method: 'DELETE' });
+}
+
+/** PUT /api/vacaciones/:id/aprobar — (admin/jefe) */
+export function aprobarVacaciones(id) {
+  return request(`/vacaciones/${id}/aprobar`, { method: 'PUT' });
+}
+
+/** PUT /api/vacaciones/:id/rechazar — body: { motivo_rechazo? } (admin/jefe) */
+export function rechazarVacaciones(id, motivo_rechazo = '') {
+  return request(`/vacaciones/${id}/rechazar`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivo_rechazo }),
+  });
 }
 
 // ─────────────────────────────────────────────────────
