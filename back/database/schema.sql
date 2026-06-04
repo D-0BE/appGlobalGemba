@@ -159,7 +159,6 @@ CREATE TABLE informes (
 -- Fichajes: consultas frecuentes por usuario y rango de fechas
 CREATE INDEX idx_fichajes_usuario      ON fichajes (usuario_id);
 CREATE INDEX idx_fichajes_entrada      ON fichajes (entrada);
-CREATE INDEX idx_fichajes_usuario_mes  ON fichajes (usuario_id, DATE_TRUNC('month', entrada));
 
 -- Vacaciones: filtrar por usuario y estado
 CREATE INDEX idx_vacaciones_usuario    ON vacaciones (usuario_id);
