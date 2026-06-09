@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { getFichajes, getVacaciones, getTareas, getMe } from '../api';
+import { getFichajes, getMisVacaciones, getTareas, getMe } from '../api';
 import './Reporting.css';
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -75,7 +75,7 @@ export default function Reporting() {
             const [me, fichs, vacs, tars] = await Promise.all([
                 getMe(),
                 getFichajes(mesKey),
-                getVacaciones(),
+                getMisVacaciones(),   // siempre solo las del usuario actual
                 getTareas(),
             ]);
             setUsuario(me);
@@ -97,7 +97,9 @@ export default function Reporting() {
         const totalHoras = cerrados.reduce((acc, f) => acc + calcularHoras(f), 0);
         const diasTrabajados = cerrados.length;
 
-        const vacAprobadas = vacaciones.filter((v) => v.estado === 'aprobado');
+        // Solo vacaciones del usuario actual (getMisVacaciones ya filtra, pero por seguridad)
+        const misVacs     = usuario ? vacaciones.filter((v) => !v.usuario_id || v.usuario_id === usuario.id) : vacaciones;
+        const vacAprobadas = misVacs.filter((v) => v.estado === 'aprobado');
         const diasVacaciones = vacAprobadas.reduce((acc, v) => {
             const ini = new Date(v.fecha_inicio);
             const fin = new Date(v.fecha_fin);
@@ -105,20 +107,24 @@ export default function Reporting() {
             return acc + diff;
         }, 0);
 
-        const vacPendientes = vacaciones.filter((v) => v.estado === 'pendiente').length;
+        const vacPendientes = misVacs.filter((v) => v.estado === 'pendiente').length;
         const tareasCompletadas = tareas.filter((t) => t.estado === 'completada').length;
         const tareasPendientes  = tareas.filter((t) => t.estado === 'pendiente' || t.estado === 'en_progreso').length;
+
+        // Usar dias_vacaciones_curso del perfil (o 22 por defecto)
+        const diasAsignados = usuario?.dias_vacaciones_curso ?? 22;
 
         return {
             totalHoras: totalHoras.toFixed(1),
             diasTrabajados,
             diasVacaciones,
-            diasDisponibles: 22 - diasVacaciones,
+            diasDisponibles: diasAsignados - diasVacaciones,
+            diasAsignados,
             vacPendientes,
             tareasCompletadas,
             tareasPendientes,
         };
-    }, [fichajes, vacaciones, tareas]);
+    }, [fichajes, vacaciones, tareas, usuario]);
 
     // ── Navegación de mes ───────────────────────────────────
     const cambiarMes = (delta) => {
@@ -156,7 +162,7 @@ export default function Reporting() {
                     <h2 className="rep-title">Reporting Personal</h2>
                     {usuario && (
                         <p className="rep-subtitle">
-                            {usuario.nombre} {usuario.apellidos}
+                            {usuario.nombre} {usuario.primer_apellido} {usuario.segundo_apellido || ''}
                             {usuario.departamento && <span className="rep-badge">{usuario.departamento}</span>}
                         </p>
                     )}
@@ -178,7 +184,9 @@ export default function Reporting() {
                 <div className="rep-card rep-card--purple">
                     <div className="rep-card__value">{metricas.diasDisponibles}</div>
                     <div className="rep-card__label">Vacaciones disponibles</div>
-                    <div className="rep-card__sub">{metricas.diasVacaciones} tomados · {metricas.vacPendientes} pendientes</div>
+                    <div className="rep-card__sub">
+                        {metricas.diasAsignados} asignados · {metricas.diasVacaciones} tomados · {metricas.vacPendientes} pendientes
+                    </div>
                 </div>
                 <div className="rep-card rep-card--orange">
                     <div className="rep-card__value">{metricas.tareasCompletadas}</div>

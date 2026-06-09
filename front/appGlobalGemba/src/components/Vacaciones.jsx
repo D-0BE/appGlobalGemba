@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-    getVacaciones, solicitarVacaciones, cancelarVacaciones,
-    aprobarVacaciones, rechazarVacaciones,
+    getVacaciones, getMisVacaciones, solicitarVacaciones, cancelarVacaciones,
+    aprobarVacaciones, rechazarVacaciones, getMe,
 } from '../api';
 import './Vacaciones.css';
-
-const VACATION_ALLOWANCE = 22;
 
 const getDateKey = (date) => {
     const d = new Date(date);
@@ -63,33 +61,41 @@ function expandirRango(fechaInicio, fechaFin) {
 }
 
 function Vacaciones() {
-    // Rol del usuario actual
     const userRol = localStorage.getItem('role') || '';
     const esAdmin = userRol === 'admin' || userRol === 'jefe';
 
-    const [monthDate, setMonthDate] = useState(() => {
+    const [me, setMe]                             = useState(null);
+    const [monthDate, setMonthDate]               = useState(() => {
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         return now;
     });
 
+    // solicitudes = todas (para admin) | solo mías (para empleado)
     const [solicitudes, setSolicitudes]   = useState([]);
+    // misSolicitudes = siempre solo las del usuario actual
+    const [misSolicitudes, setMisSolicitudes] = useState([]);
     const [loading, setLoading]           = useState(true);
     const [actionError, setActionError]   = useState('');
     const [actionOk, setActionOk]         = useState('');
     const [showAssigned, setShowAssigned] = useState(false);
 
-    // Estado para el rechazo con motivo
-    const [rechazandoId, setRechazandoId] = useState(null);
-    const [motivoRechazo, setMotivoRechazo] = useState('');
+    const [rechazandoId, setRechazandoId]     = useState(null);
+    const [motivoRechazo, setMotivoRechazo]   = useState('');
 
     const monthCalendar = useMemo(() => getMonthCalendar(monthDate), [monthDate]);
 
-    // ── Cargar solicitudes ────────────────────────────
+    // ── Cargar datos ──────────────────────────────────
     const cargarSolicitudes = useCallback(async () => {
         try {
-            const data = await getVacaciones();
-            setSolicitudes(data || []);
+            const [meData, todas, propias] = await Promise.all([
+                getMe(),
+                getVacaciones(),       // admin: todas | empleado: solo suyas
+                getMisVacaciones(),    // siempre solo las del usuario actual
+            ]);
+            setMe(meData);
+            setSolicitudes(todas || []);
+            setMisSolicitudes(propias || []);
         } catch {
             // silencioso
         } finally {
@@ -99,60 +105,60 @@ function Vacaciones() {
 
     useEffect(() => { cargarSolicitudes(); }, [cargarSolicitudes]);
 
-    // ── Mapas de días (solo para las solicitudes propias del empleado) ──
-    const userEmail = (() => {
-        try { return JSON.parse(localStorage.getItem('user'))?.email; } catch { return null; }
-    })();
-
-    const misSolicitudes = useMemo(() =>
-        esAdmin ? solicitudes : solicitudes,
-    [solicitudes, esAdmin]);
-
-    // Para el calendario mostramos solo las solicitudes del usuario actual
-    const misSolicitudesCalendario = useMemo(() => {
-        if (!esAdmin) return solicitudes;
-        // Admin: mostrar sus propias en el calendario
-        try {
-            const yo = JSON.parse(localStorage.getItem('user'));
-            if (!yo) return [];
-            return solicitudes.filter((s) => s.empleado === `${yo.nombre} ${yo.apellidos}`);
-        } catch { return []; }
-    }, [solicitudes, esAdmin]);
-
+    // ── Días en el calendario (solo solicitudes propias) ──
     const { diasAprobados, diasPendientes } = useMemo(() => {
         const aprobados  = new Set();
         const pendientes = new Set();
-        misSolicitudesCalendario.forEach((s) => {
+        misSolicitudes.forEach((s) => {
             const dias = expandirRango(s.fecha_inicio, s.fecha_fin);
-            if (s.estado === 'aprobado')  dias.forEach((d) => aprobados.add(d));
+            if (s.estado === 'aprobado')       dias.forEach((d) => aprobados.add(d));
             else if (s.estado === 'pendiente') dias.forEach((d) => pendientes.add(d));
         });
         return { diasAprobados: aprobados, diasPendientes: pendientes };
-    }, [misSolicitudesCalendario]);
+    }, [misSolicitudes]);
 
-    const diasAsignados = useMemo(() => new Set([...diasAprobados, ...diasPendientes]), [diasAprobados, diasPendientes]);
-    const remainingDays = VACATION_ALLOWANCE - diasAsignados.size;
+    // Días consumidos (aprobados + pendientes) para el contador
+    const diasUsados    = diasAprobados.size + diasPendientes.size;
+    const vacAllowance  = me?.dias_vacaciones_curso ?? 22;
+    const remainingDays = vacAllowance - diasUsados;
 
-    // ── Alternar día del calendario (empleados) ───────
+    // ── Alternar día del calendario (todos los roles) ──
     const toggleDay = async (date) => {
         if (!date) return;
         const dayKey = getDateKey(date);
         setActionError('');
         setActionOk('');
 
-        const solicitudExistente = misSolicitudesCalendario.find((s) => {
+        // ¿Hay una solicitud pendiente en ese día? → cancelar
+        const solicitudPendiente = misSolicitudes.find((s) => {
             const dias = expandirRango(s.fecha_inicio, s.fecha_fin);
             return dias.includes(dayKey) && s.estado === 'pendiente';
         });
 
-        if (solicitudExistente) {
+        // ¿Hay una solicitud aprobada en ese día? → cancelar (con confirmación)
+        const solicitudAprobada = misSolicitudes.find((s) => {
+            const dias = expandirRango(s.fecha_inicio, s.fecha_fin);
+            return dias.includes(dayKey) && s.estado === 'aprobado';
+        });
+
+        if (solicitudPendiente) {
             try {
-                await cancelarVacaciones(solicitudExistente.id);
+                await cancelarVacaciones(solicitudPendiente.id);
                 await cargarSolicitudes();
             } catch (err) {
                 setActionError(err.message || 'Error al cancelar la solicitud.');
             }
-        } else if (!diasAprobados.has(dayKey)) {
+        } else if (solicitudAprobada) {
+            if (window.confirm('¿Seguro que quieres cancelar estas vacaciones ya aprobadas?')) {
+                try {
+                    await cancelarVacaciones(solicitudAprobada.id);
+                    setActionOk('Vacaciones canceladas correctamente.');
+                    await cargarSolicitudes();
+                } catch (err) {
+                    setActionError(err.message || 'Error al cancelar.');
+                }
+            }
+        } else {
             try {
                 await solicitarVacaciones(dayKey, dayKey);
                 await cargarSolicitudes();
@@ -162,10 +168,12 @@ function Vacaciones() {
         }
     };
 
-    const cancelarSolicitud = async (id) => {
+    const cancelarSolicitud = async (id, aprobada = false) => {
+        if (aprobada && !window.confirm('¿Seguro que quieres cancelar estas vacaciones ya aprobadas?')) return;
         setActionError('');
         try {
             await cancelarVacaciones(id);
+            setActionOk('Vacaciones canceladas.');
             await cargarSolicitudes();
         } catch (err) {
             setActionError(err.message || 'Error al cancelar la solicitud.');
@@ -214,6 +222,8 @@ function Vacaciones() {
 
     // Solicitudes pendientes para el panel de admin
     const pendientes = solicitudes.filter((s) => s.estado === 'pendiente');
+    // Solicitudes aprobadas (para panel admin — por si quiere cancelarlas)
+    const aprobadas  = solicitudes.filter((s) => s.estado === 'aprobado');
 
     return (
         <div className="vacaciones-container">
@@ -285,7 +295,7 @@ function Vacaciones() {
                         </div>
                     )}
 
-                    {/* Historial de todas las solicitudes */}
+                    {/* Historial de todas las solicitudes con opción de cancelar aprobadas */}
                     <details className="admin-historial">
                         <summary>Ver historial completo ({solicitudes.length})</summary>
                         <table className="admin-table">
@@ -296,6 +306,7 @@ function Vacaciones() {
                                     <th>Hasta</th>
                                     <th>Estado</th>
                                     <th>Aprobado por</th>
+                                    <th>Acción</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -310,6 +321,16 @@ function Vacaciones() {
                                             </span>
                                         </td>
                                         <td>{s.aprobado_por_nombre || '—'}</td>
+                                        <td>
+                                            {(s.estado === 'pendiente' || s.estado === 'aprobado') && (
+                                                <button
+                                                    className="btn-accion cancelar-sm"
+                                                    onClick={() => cancelarSolicitud(s.id, s.estado === 'aprobado')}
+                                                >
+                                                    Cancelar
+                                                </button>
+                                            )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -318,18 +339,24 @@ function Vacaciones() {
                 </div>
             )}
 
-            {/* ── Vista empleado: contador de días ── */}
+            {/* ── Contador de días disponibles ── */}
             <div className="vacaciones-top-row">
                 <div className="vacaciones-available-card">
                     <div className="vacaciones-note">TUS DÍAS DISPONIBLES DE VACACIONES SON:</div>
                     <div className={`vacaciones-available ${remainingDays < 0 ? 'negative' : ''}`}>
                         {remainingDays}
                     </div>
+                    <div className="vacaciones-allowance-detail">
+                        {vacAllowance} días asignados · {diasAprobados.size} aprobados · {diasPendientes.size} pendientes
+                    </div>
                 </div>
             </div>
 
-            {!esAdmin && actionError && (
+            {actionError && (
                 <p style={{ color: 'red', padding: '8px 0', textAlign: 'center' }}>{actionError}</p>
+            )}
+            {!esAdmin && actionOk && (
+                <p style={{ color: 'green', padding: '8px 0', textAlign: 'center' }}>{actionOk}</p>
             )}
 
             {/* ── Calendario ── */}
@@ -350,12 +377,12 @@ function Vacaciones() {
                     <div className="vacaciones-days-grid">
                         {monthCalendar.map((week, weekIndex) =>
                             week.map((day, dayIndex) => {
-                                const dayKey     = day ? getDateKey(day) : null;
-                                const isAprobado = dayKey ? diasAprobados.has(dayKey) : false;
+                                const dayKey      = day ? getDateKey(day) : null;
+                                const isAprobado  = dayKey ? diasAprobados.has(dayKey)  : false;
                                 const isPendiente = dayKey ? diasPendientes.has(dayKey) : false;
-                                const selected   = isAprobado || isPendiente;
-                                let extraClass   = '';
-                                if (isAprobado) extraClass = 'aprobado';
+                                const selected    = isAprobado || isPendiente;
+                                let extraClass    = '';
+                                if (isAprobado)       extraClass = 'aprobado';
                                 else if (isPendiente) extraClass = 'pendiente';
 
                                 return (
@@ -364,8 +391,11 @@ function Vacaciones() {
                                         type="button"
                                         className={`vacaciones-day ${selected ? 'selected' : ''} ${extraClass} ${!day ? 'empty' : ''}`}
                                         onClick={() => toggleDay(day)}
-                                        disabled={!day || isAprobado}
-                                        title={isAprobado ? 'Aprobado' : isPendiente ? 'Pendiente' : ''}
+                                        disabled={!day}
+                                        title={
+                                            isAprobado  ? 'Aprobado — clic para cancelar' :
+                                            isPendiente ? 'Pendiente — clic para cancelar' : ''
+                                        }
                                     >
                                         {day ? day.getDate() : ''}
                                     </button>
@@ -381,7 +411,7 @@ function Vacaciones() {
                 </div>
             </div>
 
-            {/* ── Mis solicitudes (todos los roles) ── */}
+            {/* ── Mis solicitudes ── */}
             <div className="vacaciones-actions">
                 <button type="button" className="assigned-toggle" onClick={() => setShowAssigned((p) => !p)}>
                     Mis vacaciones {showAssigned ? '▲' : '▼'}
@@ -390,15 +420,15 @@ function Vacaciones() {
                 {showAssigned && (
                     <div className="assigned-panel">
                         <div className="assigned-summary">
-                            {esAdmin
-                                ? `Mostrando tus propias solicitudes`
-                                : `Solicitudes: ${misSolicitudes.length}`}
+                            {misSolicitudes.length === 0
+                                ? 'No tienes solicitudes de vacaciones.'
+                                : `${misSolicitudes.length} solicitud(es) — ${diasAprobados.size} días aprobados`}
                         </div>
                         <div className="assigned-list">
-                            {misSolicitudesCalendario.length === 0 ? (
+                            {misSolicitudes.length === 0 ? (
                                 <div className="assigned-empty">No tienes solicitudes de vacaciones.</div>
                             ) : (
-                                misSolicitudesCalendario.map((s) => (
+                                misSolicitudes.map((s) => (
                                     <div key={s.id} className="assigned-item">
                                         <span>
                                             {formatDateLong(s.fecha_inicio)}
@@ -414,11 +444,11 @@ function Vacaciones() {
                                                 </small>
                                             )}
                                         </span>
-                                        {s.estado === 'pendiente' && (
+                                        {(s.estado === 'pendiente' || s.estado === 'aprobado') && (
                                             <button
                                                 type="button"
                                                 className="assigned-remove"
-                                                onClick={() => cancelarSolicitud(s.id)}
+                                                onClick={() => cancelarSolicitud(s.id, s.estado === 'aprobado')}
                                             >
                                                 Cancelar
                                             </button>

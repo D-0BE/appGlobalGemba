@@ -124,10 +124,15 @@ export function registrarSalida(id, pausa_minutos = 0) {
 // VACACIONES
 // ─────────────────────────────────────────────────────
 
-/** GET /api/vacaciones?estado=X */
+/** GET /api/vacaciones?estado=X — para admin devuelve todas */
 export function getVacaciones(estado) {
   const query = estado ? `?estado=${estado}` : '';
   return request(`/vacaciones${query}`);
+}
+
+/** GET /api/vacaciones?propio=true — devuelve solo las del usuario actual (cualquier rol) */
+export function getMisVacaciones() {
+  return request('/vacaciones?propio=true');
 }
 
 /** POST /api/vacaciones — body: { fecha_inicio, fecha_fin } */
@@ -151,6 +156,24 @@ export function aprobarVacaciones(id) {
 /** PUT /api/vacaciones/:id/rechazar — body: { motivo_rechazo? } (admin/jefe) */
 export function rechazarVacaciones(id, motivo_rechazo = '') {
   return request(`/vacaciones/${id}/rechazar`, {
+    method: 'PUT',
+    body: JSON.stringify({ motivo_rechazo }),
+  });
+}
+
+/** PUT /api/vacaciones/:id/solicitar-cancelacion — empleado solicita cancelar una aprobada */
+export function solicitarCancelacion(id) {
+  return request(`/vacaciones/${id}/solicitar-cancelacion`, { method: 'PUT' });
+}
+
+/** PUT /api/vacaciones/:id/aprobar-cancelacion — admin aprueba la cancelación (elimina) */
+export function aprobarCancelacion(id) {
+  return request(`/vacaciones/${id}/aprobar-cancelacion`, { method: 'PUT' });
+}
+
+/** PUT /api/vacaciones/:id/rechazar-cancelacion — admin rechaza la cancelación (vuelve a aprobado) */
+export function rechazarCancelacion(id, motivo_rechazo = '') {
+  return request(`/vacaciones/${id}/rechazar-cancelacion`, {
     method: 'PUT',
     body: JSON.stringify({ motivo_rechazo }),
   });

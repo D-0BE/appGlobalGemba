@@ -19,7 +19,7 @@ router.post('/login', async (req, res) => {
   try {
     // Buscar usuario con su rol
     const result = await pool.query(
-      `SELECT u.id, u.nombre, u.apellidos, u.email, u.password_hash,
+      `SELECT u.id, u.nombre, u.primer_apellido, u.segundo_apellido, u.email, u.password_hash,
               u.foto_url, u.departamento_id, u.activo,
               r.nombre AS rol
        FROM usuarios u
@@ -52,12 +52,13 @@ router.post('/login', async (req, res) => {
     res.json({
       token,
       usuario: {
-        id:             user.id,
-        nombre:         user.nombre,
-        apellidos:      user.apellidos,
-        email:          user.email,
-        rol:            user.rol,
-        foto_url:       user.foto_url,
+        id:              user.id,
+        nombre:          user.nombre,
+        primer_apellido: user.primer_apellido,
+        segundo_apellido: user.segundo_apellido,
+        email:           user.email,
+        rol:             user.rol,
+        foto_url:        user.foto_url,
         departamento_id: user.departamento_id,
       },
     });

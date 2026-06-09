@@ -30,21 +30,29 @@ ON CONFLICT (nombre) DO NOTHING;
 
 -- ── Usuarios ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS usuarios (
-    id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    nombre           VARCHAR(100) NOT NULL,
-    apellidos        VARCHAR(100) NOT NULL,
-    email            VARCHAR(255) UNIQUE NOT NULL,
-    password_hash    VARCHAR(255) NOT NULL,
-    fecha_nacimiento DATE,
-    departamento_id  UUID REFERENCES departamentos(id),
-    rol_id           INTEGER REFERENCES roles(id),
-    activo           BOOLEAN DEFAULT TRUE,
-    foto_url         TEXT,
-    created_at       TIMESTAMPTZ DEFAULT NOW()
+    id                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nombre                    VARCHAR(100) NOT NULL,
+    primer_apellido           VARCHAR(100) NOT NULL,
+    segundo_apellido          VARCHAR(100),
+    dni                       VARCHAR(20),
+    nacionalidad              VARCHAR(100),
+    telefono                  VARCHAR(20),
+    email                     VARCHAR(255) UNIQUE NOT NULL,
+    email_personal            VARCHAR(255),
+    password_hash             VARCHAR(255) NOT NULL,
+    fecha_nacimiento          DATE,
+    fecha_incorporacion       DATE,
+    dias_vacaciones_curso     INTEGER DEFAULT 22,
+    dias_vacaciones_anterior  INTEGER DEFAULT 0,
+    departamento_id           UUID REFERENCES departamentos(id),
+    rol_id                    INTEGER REFERENCES roles(id),
+    activo                    BOOLEAN DEFAULT TRUE,
+    foto_url                  TEXT,
+    created_at                TIMESTAMPTZ DEFAULT NOW()
 );
 
 -- Hash de GlobalGemba2026! (bcrypt rounds=12)
-INSERT INTO usuarios (nombre, apellidos, email, password_hash, fecha_nacimiento, departamento_id, rol_id, activo)
+INSERT INTO usuarios (nombre, primer_apellido, email, password_hash, fecha_nacimiento, departamento_id, rol_id, activo)
 VALUES
     ('Admin', 'Sistema', 'admin@globalgemba.com',
      '$2a$12$3nr/G1LKpV8kHZFxqpDTwOsM2It.W20hhvr27iWwRRWiHHbSA.k0C',
@@ -111,10 +119,11 @@ CREATE TABLE IF NOT EXISTS horarios (
     usuario_id   UUID REFERENCES usuarios(id) ON DELETE CASCADE,
     hora_entrada TIME NOT NULL,
     hora_salida  TIME NOT NULL,
-    dias_semana  INTEGER[] DEFAULT ARRAY[1,2,3,4,5]
+    dias_semana  INTEGER[] DEFAULT ARRAY[1,2,3,4,5],
+    tipo_jornada VARCHAR(10) DEFAULT 'TOTAL'
 );
-INSERT INTO horarios (usuario_id, hora_entrada, hora_salida, dias_semana)
-SELECT id, '09:00', '18:00', ARRAY[1,2,3,4,5] FROM usuarios
+INSERT INTO horarios (usuario_id, hora_entrada, hora_salida, dias_semana, tipo_jornada)
+SELECT id, '09:00', '19:00', ARRAY[1,2,3,4,5], 'TOTAL' FROM usuarios
 WHERE activo = TRUE
   AND id NOT IN (SELECT usuario_id FROM horarios);
 

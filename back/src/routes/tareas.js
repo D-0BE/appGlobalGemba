@@ -25,8 +25,8 @@ router.get('/', async (req, res) => {
         SELECT t.id, t.titulo, t.descripcion, t.estado, t.prioridad,
                t.fecha_limite, t.created_at,
                d.nombre AS departamento,
-               u.nombre || ' ' || u.apellidos AS creado_por,
-               ARRAY_AGG(DISTINCT emp.nombre || ' ' || emp.apellidos) AS asignados
+               u.nombre || ' ' || u.primer_apellido AS creado_por,
+               ARRAY_AGG(DISTINCT emp.nombre || ' ' || emp.primer_apellido) AS asignados
         FROM tareas t
         LEFT JOIN departamentos  d ON d.id = t.departamento_id
         LEFT JOIN usuarios       u ON u.id = t.creado_por
@@ -37,14 +37,14 @@ router.get('/', async (req, res) => {
         params.push(estado);
         query += ` WHERE t.estado = $${params.length}`;
       }
-      query += ` GROUP BY t.id, d.nombre, u.nombre, u.apellidos ORDER BY t.created_at DESC`;
+      query += ` GROUP BY t.id, d.nombre, u.nombre, u.primer_apellido ORDER BY t.created_at DESC`;
     } else {
       params.push(req.usuario.id);
       query = `
         SELECT t.id, t.titulo, t.descripcion, t.estado, t.prioridad,
                t.fecha_limite, t.created_at,
                d.nombre AS departamento,
-               u.nombre || ' ' || u.apellidos AS creado_por
+               u.nombre || ' ' || u.primer_apellido AS creado_por
         FROM tareas t
         JOIN tareas_usuarios tu ON tu.tarea_id = t.id AND tu.usuario_id = $1
         LEFT JOIN departamentos d ON d.id = t.departamento_id
@@ -74,15 +74,15 @@ router.get('/:id', async (req, res) => {
       `SELECT t.id, t.titulo, t.descripcion, t.estado, t.prioridad,
               t.fecha_limite, t.created_at,
               d.nombre AS departamento,
-              u.nombre || ' ' || u.apellidos AS creado_por,
-              ARRAY_AGG(DISTINCT emp.nombre || ' ' || emp.apellidos) AS asignados
+              u.nombre || ' ' || u.primer_apellido AS creado_por,
+              ARRAY_AGG(DISTINCT emp.nombre || ' ' || emp.primer_apellido) AS asignados
        FROM tareas t
        LEFT JOIN departamentos  d ON d.id = t.departamento_id
        LEFT JOIN usuarios       u ON u.id = t.creado_por
        LEFT JOIN tareas_usuarios tu ON tu.tarea_id = t.id
        LEFT JOIN usuarios       emp ON emp.id = tu.usuario_id
        WHERE t.id = $1
-       GROUP BY t.id, d.nombre, u.nombre, u.apellidos`,
+       GROUP BY t.id, d.nombre, u.nombre, u.primer_apellido`,
       [req.params.id]
     );
 
